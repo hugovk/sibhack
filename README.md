@@ -3,6 +3,13 @@ SibHack tweets
 
 Tweets from SibHack, archived and processed using [twarc](https://github.com/edsu/twarc).
 
+See a wall of the tweets here: [wall.html](https://hugovk.github.io/sibhack/wall.html)
+
+Here's tweets on a map: [sibhack.geojson](https://github.com/hugovk/sibhack/blob/gh-pages/sibhack.geojson)
+
+Here's the raw (filtered) data: [sibhack.json](https://github.com/hugovk/sibhack/blob/gh-pages/sibhack.json)
+
+
 Technical notes
 ---------------
 
