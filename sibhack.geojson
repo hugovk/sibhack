@@ -1,0 +1,77 @@
+{
+  "type": "FeatureCollection", 
+  "features": [
+    {
+      "geometry": {
+        "type": "Point", 
+        "coordinates": [
+          24.94411469, 
+          60.1701118
+        ]
+      }, 
+      "type": "Feature", 
+      "properties": {
+        "name": "Arttu Silvast", 
+        "url": "http://twitter.com/arttusilvast/status/523105598431563776", 
+        "text": "#SibHack (at @AteneumMuseum in Helsinki, Uusimaa) https://t.co/qnmKxT6EM1", 
+        "created_at": "Fri Oct 17 13:37:48 +0000 2014", 
+        "profile_image_url": "http://pbs.twimg.com/profile_images/378800000399740460/af5520e2dc18fd777633f9ead73fc371_normal.jpeg", 
+        "screen_name": "arttusilvast"
+      }
+    }, 
+    {
+      "geometry": {
+        "type": "Point", 
+        "coordinates": [
+          24.94383054, 
+          60.17044218
+        ]
+      }, 
+      "type": "Feature", 
+      "properties": {
+        "name": "Hanna Toivonen", 
+        "url": "http://twitter.com/h_hannahun/status/523153440256819201", 
+        "text": "A weekend of code, music, art gallery ghosts and awesomeness. Gonna build some new magic. #SibHack\u2026 http://t.co/00Vj3tU8yk", 
+        "created_at": "Fri Oct 17 16:47:54 +0000 2014", 
+        "profile_image_url": "http://pbs.twimg.com/profile_images/378800000359897743/3977d6859ad54eec3aaf5a9019513b57_normal.jpeg", 
+        "screen_name": "h_hannahun"
+      }
+    }, 
+    {
+      "geometry": {
+        "type": "Point", 
+        "coordinates": [
+          24.94383054, 
+          60.17044218
+        ]
+      }, 
+      "type": "Feature", 
+      "properties": {
+        "name": "Hanna Toivonen", 
+        "url": "http://twitter.com/h_hannahun/status/523536361438347264", 
+        "text": "Getting there. Our instrument/installation that interacts with movement &amp; midi. #SibHack #suchtech @\u2026 http://t.co/KVfo4cVdgK", 
+        "created_at": "Sat Oct 18 18:09:30 +0000 2014", 
+        "profile_image_url": "http://pbs.twimg.com/profile_images/378800000359897743/3977d6859ad54eec3aaf5a9019513b57_normal.jpeg", 
+        "screen_name": "h_hannahun"
+      }
+    }, 
+    {
+      "geometry": {
+        "type": "Point", 
+        "coordinates": [
+          24.94411469, 
+          60.1701118
+        ]
+      }, 
+      "type": "Feature", 
+      "properties": {
+        "name": "Arttu Silvast", 
+        "url": "http://twitter.com/arttusilvast/status/523791624892338176", 
+        "text": "Grande finaali #sibhack (at @AteneumMuseum in Helsinki, Uusimaa) https://t.co/Cii8EyP7xu", 
+        "created_at": "Sun Oct 19 11:03:49 +0000 2014", 
+        "profile_image_url": "http://pbs.twimg.com/profile_images/378800000399740460/af5520e2dc18fd777633f9ead73fc371_normal.jpeg", 
+        "screen_name": "arttusilvast"
+      }
+    }
+  ]
+}
