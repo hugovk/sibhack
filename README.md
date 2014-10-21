@@ -3,11 +3,24 @@ SibHack tweets
 
 Tweets from SibHack, archived and processed using [twarc](https://github.com/edsu/twarc).
 
-See a wall of the tweets here: [wall.html](https://hugovk.github.io/sibhack/wall.html)
+ * See a [wall](https://hugovk.github.io/sibhack/wall.html) of the 652 tweets.
 
-Here's tweets on a map: [sibhack.geojson](https://github.com/hugovk/sibhack/blob/gh-pages/sibhack.geojson)
+ * The [top 10 retweets](https://hugovk.github.io/sibhack/retweets.html).
 
-Here's the raw (filtered) data: [sibhack.json](https://github.com/hugovk/sibhack/blob/gh-pages/sibhack.json)
+ * 212 tweets were sent by men, 199 by women, 241 unknown.
+
+ * A [wordcloud](https://hugovk.github.io/sibhack/wordcloud.html).
+
+ * Tweets on a [map](https://github.com/hugovk/sibhack/blob/gh-pages/sibhack.geojson).
+
+ * Directed graphs of [retweets](https://hugovk.github.io/sibhack/directed-retweets.html), [mentions](https://hugovk.github.io/sibhack/directed-mentions.html) and [replies](https://hugovk.github.io/sibhack/directed-replies.html)
+
+ * A list of [embedded media](https://github.com/hugovk/sibhack/blob/gh-pages/embeds.txt).
+
+
+
+  * Finally, here's the raw (filtered) data: [sibhack.json](https://github.com/hugovk/sibhack/blob/gh-pages/sibhack.json).
+
 
 
 Technical notes
@@ -37,3 +50,32 @@ Create [GeoJSON](http://geojson.org/) from tweets with coordinates:
 
     utils\geojson.py sibhack.json > sibhack.geojson
 
+Count tweets by (guessed) gender:
+
+    utils\gender.py --gender male sibhack.json | wc -l
+    212
+
+    utils\gender.py --gender female sibhack.json | wc -l
+    199
+
+    utils\gender.py --gender unknown sibhack.json | wc -l
+    241
+
+Create directed graphs:
+
+    utils\directed.py sibhack.json > directed-retweets.html
+    utils\directed.py --mode mentions sibhack.json > directed-mentions.html
+    utils\directed.py --mode replies sibhack.json > directed-replies.html
+
+A list of embeds:
+
+    utils\embeds.py sibhack.json > embeds.txt
+
+Retweets:
+
+    utils\retweets.py sibhack.json > retweets.json
+    utils\wall.py retweets.json > retweets.html
+
+Make a wordcloud:
+
+    utils\wordcloud.py sibhack.json > wordcloud.html

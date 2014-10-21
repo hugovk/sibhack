@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+    <title>twarc Directed Graph of Retweets</title>
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+    <style type="text/css">
+
+div#sidebar {
+	position:fixed;
+	top:0px;
+	left:0px;
+	width: 250px;
+	height:400px;
+	overflow:scroll;
+
+	border: 1px solid black;
+	background: #eee;
+	padding: 5px;
+	}
+
+div#sidebar_lists {
+	font-size: 75%;
+}
+
+div.sidebar_list {
+	width: 50%;
+	float:left;
+}
+
+path.link {
+  fill: none;
+  stroke: #666;
+  stroke-width: 1.5px;
+}
+
+marker#plain {
+  fill: #666;
+}
+
+marker#in {
+  fill: #44f;
+}
+
+marker#out {
+  fill: #0f0;
+}
+
+path.link.hlOut {
+	stroke: #0f0;
+	stroke-width: 2px;
+}
+path.link.hlIn {
+	stroke: #44f;
+	stroke-width: 2px;
+}
+
+
+circle {
+  fill: #eee;
+  stroke: #333;
+  stroke-width: 1.5px;
+}
+circle.hl {
+	stroke: #f00;
+	fill: #f00;
+}
+circle.hlIn {
+	stroke: #0f0;
+	fill: #cfc;
+}
+circle.hlOut {
+	stroke: #66f;
+	fill: #ccf;
+}
+circle.hlout.hlIn {
+	stroke: #66f;
+	fill: #cfc;
+}
+
+text {
+  font: 10px sans-serif;
+  pointer-events: none;
+}
+
+text.shad {
+  stroke: #fff;
+  stroke-width: 3px;
+  stroke-opacity: .8;
+}
+g.hl text.shad {
+	stroke: #fcc;
+  	stroke-opacity: 1;
+}
+g.hlIn text.shad {
+	stroke: #cfc;
+  	stroke-opacity: 1;
+}
+g.hlOut text.shad {
+	stroke: #ddf;
+  	stroke-opacity: 1;
+}
+
+
+ul { margin: 0; padding: 0; list-style-type: none;}
+    </style>
+  </head>
+  <body>
+  
+    <div id="sidebar">
+    	<div id="sidebar_selectdiv">
+    	</div>
+    	<h2 id="sidebar_user"></h2>
+    	<div id="sidebar_lists">
+	    	<div class="sidebar_list" id="sidebar_inlist"></div>
+    		<div class="sidebar_list" id="sidebar_outlist"></div>
+    	</div
+    </div>
+    
+    
+
+  
+    <script type="text/javascript">
+
+	var mode = "retweets";
+	
+	var links = [{"source": 50, "target": 44, "value": 1}, {"source": 86, "target": 44, "value": 1}, {"source": 69, "target": 44, "value": 1}, {"source": 68, "target": 44, "value": 1}, {"source": 24, "target": 19, "value": 1}, {"source": 35, "target": 20, "value": 1}, {"source": 55, "target": 45, "value": 1}, {"source": 67, "target": 72, "value": 1}, {"source": 35, "target": 21, "value": 1}, {"source": 36, "target": 21, "value": 1}, {"source": 57, "target": 21, "value": 5}, {"source": 49, "target": 21, "value": 1}, {"source": 69, "target": 21, "value": 2}, {"source": 34, "target": 21, "value": 2}, {"source": 68, "target": 21, "value": 1}, {"source": 85, "target": 21, "value": 1}, {"source": 50, "target": 21, "value": 2}, {"source": 66, "target": 21, "value": 1}, {"source": 28, "target": 21, "value": 1}, {"source": 8, "target": 21, "value": 1}, {"source": 67, "target": 21, "value": 1}, {"source": 54, "target": 21, "value": 1}, {"source": 68, "target": 22, "value": 1}, {"source": 47, "target": 23, "value": 1}, {"source": 8, "target": 69, "value": 1}, {"source": 36, "target": 69, "value": 1}, {"source": 55, "target": 69, "value": 1}, {"source": 26, "target": 69, "value": 15}, {"source": 62, "target": 69, "value": 1}, {"source": 85, "target": 69, "value": 1}, {"source": 57, "target": 69, "value": 10}, {"source": 47, "target": 69, "value": 1}, {"source": 41, "target": 69, "value": 1}, {"source": 54, "target": 69, "value": 8}, {"source": 14, "target": 69, "value": 1}, {"source": 91, "target": 69, "value": 2}, {"source": 67, "target": 69, "value": 2}, {"source": 74, "target": 69, "value": 1}, {"source": 49, "target": 69, "value": 1}, {"source": 50, "target": 69, "value": 5}, {"source": 52, "target": 69, "value": 1}, {"source": 35, "target": 69, "value": 4}, {"source": 3, "target": 69, "value": 4}, {"source": 34, "target": 69, "value": 4}, {"source": 28, "target": 69, "value": 2}, {"source": 61, "target": 70, "value": 1}, {"source": 69, "target": 70, "value": 1}, {"source": 34, "target": 70, "value": 1}, {"source": 69, "target": 31, "value": 2}, {"source": 14, "target": 31, "value": 1}, {"source": 57, "target": 31, "value": 1}, {"source": 34, "target": 31, "value": 2}, {"source": 66, "target": 14, "value": 1}, {"source": 57, "target": 14, "value": 1}, {"source": 34, "target": 14, "value": 1}, {"source": 68, "target": 14, "value": 1}, {"source": 34, "target": 61, "value": 1}, {"source": 36, "target": 2, "value": 1}, {"source": 44, "target": 68, "value": 3}, {"source": 57, "target": 49, "value": 1}, {"source": 69, "target": 49, "value": 2}, {"source": 35, "target": 49, "value": 1}, {"source": 44, "target": 50, "value": 1}, {"source": 57, "target": 50, "value": 1}, {"source": 13, "target": 50, "value": 1}, {"source": 69, "target": 50, "value": 5}, {"source": 0, "target": 50, "value": 1}, {"source": 47, "target": 50, "value": 1}, {"source": 49, "target": 50, "value": 2}, {"source": 35, "target": 50, "value": 2}, {"source": 73, "target": 50, "value": 1}, {"source": 34, "target": 50, "value": 1}, {"source": 54, "target": 50, "value": 11}, {"source": 31, "target": 51, "value": 1}, {"source": 34, "target": 51, "value": 1}, {"source": 61, "target": 52, "value": 1}, {"source": 12, "target": 53, "value": 1}, {"source": 77, "target": 26, "value": 1}, {"source": 51, "target": 27, "value": 1}, {"source": 57, "target": 27, "value": 1}, {"source": 67, "target": 27, "value": 1}, {"source": 34, "target": 27, "value": 21}, {"source": 29, "target": 27, "value": 1}, {"source": 57, "target": 54, "value": 3}, {"source": 90, "target": 54, "value": 1}, {"source": 69, "target": 54, "value": 1}, {"source": 50, "target": 54, "value": 6}, {"source": 34, "target": 54, "value": 1}, {"source": 28, "target": 54, "value": 1}, {"source": 34, "target": 30, "value": 1}, {"source": 0, "target": 30, "value": 1}, {"source": 44, "target": 3, "value": 1}, {"source": 55, "target": 3, "value": 1}, {"source": 90, "target": 3, "value": 1}, {"source": 62, "target": 3, "value": 1}, {"source": 69, "target": 3, "value": 1}, {"source": 57, "target": 3, "value": 2}, {"source": 31, "target": 3, "value": 1}, {"source": 14, "target": 3, "value": 1}, {"source": 34, "target": 3, "value": 1}, {"source": 85, "target": 3, "value": 1}, {"source": 50, "target": 3, "value": 1}, {"source": 51, "target": 3, "value": 1}, {"source": 66, "target": 3, "value": 1}, {"source": 35, "target": 3, "value": 1}, {"source": 26, "target": 3, "value": 1}, {"source": 67, "target": 3, "value": 1}, {"source": 54, "target": 3, "value": 2}, {"source": 44, "target": 63, "value": 1}, {"source": 35, "target": 57, "value": 2}, {"source": 36, "target": 57, "value": 1}, {"source": 55, "target": 57, "value": 1}, {"source": 89, "target": 57, "value": 1}, {"source": 90, "target": 57, "value": 1}, {"source": 85, "target": 57, "value": 1}, {"source": 69, "target": 57, "value": 5}, {"source": 31, "target": 57, "value": 1}, {"source": 0, "target": 57, "value": 1}, {"source": 47, "target": 57, "value": 1}, {"source": 91, "target": 57, "value": 3}, {"source": 67, "target": 57, "value": 1}, {"source": 68, "target": 57, "value": 1}, {"source": 49, "target": 57, "value": 1}, {"source": 50, "target": 57, "value": 3}, {"source": 51, "target": 57, "value": 2}, {"source": 66, "target": 57, "value": 2}, {"source": 54, "target": 57, "value": 5}, {"source": 3, "target": 57, "value": 3}, {"source": 34, "target": 57, "value": 15}, {"source": 28, "target": 57, "value": 2}, {"source": 51, "target": 58, "value": 1}, {"source": 34, "target": 58, "value": 1}, {"source": 44, "target": 4, "value": 1}, {"source": 69, "target": 4, "value": 1}, {"source": 3, "target": 4, "value": 2}, {"source": 61, "target": 9, "value": 1}, {"source": 44, "target": 78, "value": 1}, {"source": 3, "target": 5, "value": 1}, {"source": 35, "target": 5, "value": 1}, {"source": 57, "target": 59, "value": 1}, {"source": 24, "target": 25, "value": 1}, {"source": 69, "target": 32, "value": 2}, {"source": 31, "target": 32, "value": 1}, {"source": 44, "target": 28, "value": 3}, {"source": 69, "target": 28, "value": 2}, {"source": 0, "target": 28, "value": 2}, {"source": 47, "target": 28, "value": 1}, {"source": 49, "target": 28, "value": 1}, {"source": 50, "target": 28, "value": 2}, {"source": 51, "target": 28, "value": 1}, {"source": 3, "target": 28, "value": 2}, {"source": 54, "target": 28, "value": 4}, {"source": 55, "target": 28, "value": 1}, {"source": 29, "target": 28, "value": 1}, {"source": 57, "target": 28, "value": 5}, {"source": 31, "target": 28, "value": 2}, {"source": 77, "target": 28, "value": 1}, {"source": 6, "target": 28, "value": 1}, {"source": 85, "target": 28, "value": 1}, {"source": 8, "target": 28, "value": 1}, {"source": 34, "target": 28, "value": 2}, {"source": 35, "target": 28, "value": 1}, {"source": 90, "target": 28, "value": 1}, {"source": 13, "target": 28, "value": 1}, {"source": 14, "target": 28, "value": 1}, {"source": 41, "target": 28, "value": 1}, {"source": 91, "target": 28, "value": 1}, {"source": 66, "target": 28, "value": 2}, {"source": 67, "target": 28, "value": 1}, {"source": 62, "target": 60, "value": 1}, {"source": 67, "target": 7, "value": 1}, {"source": 54, "target": 7, "value": 1}, {"source": 61, "target": 83, "value": 1}, {"source": 67, "target": 71, "value": 1}, {"source": 57, "target": 79, "value": 1}, {"source": 57, "target": 10, "value": 1}, {"source": 44, "target": 0, "value": 1}, {"source": 69, "target": 0, "value": 1}, {"source": 34, "target": 0, "value": 1}, {"source": 31, "target": 80, "value": 1}, {"source": 55, "target": 81, "value": 1}, {"source": 57, "target": 81, "value": 1}, {"source": 90, "target": 65, "value": 1}, {"source": 26, "target": 82, "value": 1}, {"source": 67, "target": 33, "value": 1}, {"source": 69, "target": 46, "value": 1}, {"source": 68, "target": 11, "value": 1}, {"source": 34, "target": 48, "value": 1}, {"source": 3, "target": 84, "value": 1}, {"source": 67, "target": 75, "value": 1}, {"source": 44, "target": 86, "value": 1}, {"source": 68, "target": 86, "value": 2}, {"source": 69, "target": 8, "value": 1}, {"source": 54, "target": 8, "value": 1}, {"source": 57, "target": 43, "value": 1}, {"source": 51, "target": 34, "value": 2}, {"source": 57, "target": 34, "value": 1}, {"source": 67, "target": 34, "value": 1}, {"source": 29, "target": 34, "value": 1}, {"source": 36, "target": 35, "value": 1}, {"source": 3, "target": 35, "value": 1}, {"source": 62, "target": 35, "value": 1}, {"source": 57, "target": 35, "value": 1}, {"source": 31, "target": 35, "value": 2}, {"source": 50, "target": 35, "value": 1}, {"source": 90, "target": 35, "value": 1}, {"source": 69, "target": 35, "value": 5}, {"source": 66, "target": 35, "value": 1}, {"source": 26, "target": 35, "value": 3}, {"source": 34, "target": 35, "value": 2}, {"source": 54, "target": 35, "value": 1}, {"source": 50, "target": 88, "value": 1}, {"source": 69, "target": 88, "value": 1}, {"source": 35, "target": 88, "value": 1}, {"source": 57, "target": 88, "value": 1}, {"source": 54, "target": 88, "value": 3}, {"source": 57, "target": 64, "value": 2}, {"source": 44, "target": 37, "value": 1}, {"source": 24, "target": 38, "value": 1}, {"source": 54, "target": 39, "value": 1}, {"source": 44, "target": 13, "value": 2}, {"source": 90, "target": 13, "value": 1}, {"source": 69, "target": 13, "value": 1}, {"source": 77, "target": 13, "value": 1}, {"source": 0, "target": 13, "value": 1}, {"source": 3, "target": 13, "value": 1}, {"source": 35, "target": 13, "value": 1}, {"source": 8, "target": 13, "value": 1}, {"source": 34, "target": 13, "value": 1}, {"source": 28, "target": 13, "value": 1}, {"source": 54, "target": 40, "value": 1}, {"source": 54, "target": 1, "value": 1}, {"source": 69, "target": 15, "value": 1}, {"source": 57, "target": 15, "value": 10}, {"source": 3, "target": 15, "value": 1}, {"source": 68, "target": 16, "value": 1}, {"source": 85, "target": 16, "value": 1}, {"source": 34, "target": 17, "value": 1}, {"source": 69, "target": 91, "value": 1}, {"source": 54, "target": 56, "value": 1}, {"source": 3, "target": 42, "value": 1}, {"source": 24, "target": 76, "value": 1}, {"source": 36, "target": 87, "value": 1}, {"source": 36, "target": 18, "value": 1}, {"source": 69, "target": 18, "value": 1}, {"source": 34, "target": 67, "value": 1}, {"source": 36, "target": 92, "value": 1}];
+
+	var nodes = [{"name": "terotik", "title": "terotik (6/3)"}, {"name": "sacodex", "title": "sacodex (0/1)"}, {"name": "PKangasniemi", "title": "PKangasniemi (0/1)"}, {"name": "SusannaPetterss", "title": "SusannaPetterss (17/19)"}, {"name": "Twivikka", "title": "Twivikka (0/4)"}, {"name": "Suosio", "title": "Suosio (0/2)"}, {"name": "Koskenseppa", "title": "Koskenseppa (1/0)"}, {"name": "Suvisal0", "title": "Suvisal0 (0/2)"}, {"name": "NuppuStenros", "title": "NuppuStenros (4/2)"}, {"name": "mollyfication", "title": "mollyfication (0/1)"}, {"name": "yle_ik", "title": "yle_ik (0/1)"}, {"name": "KalliJari", "title": "KalliJari (0/1)"}, {"name": "bladahl", "title": "bladahl (1/0)"}, {"name": "katsi111", "title": "katsi111 (2/11)"}, {"name": "MRantamaula", "title": "MRantamaula (4/4)"}, {"name": "KKukkurainen", "title": "KKukkurainen (0/12)"}, {"name": "pmavik", "title": "pmavik (0/2)"}, {"name": "teropa", "title": "teropa (0/1)"}, {"name": "HelsinkiPhil", "title": "HelsinkiPhil (0/2)"}, {"name": "LearnMaxforLive", "title": "LearnMaxforLive (0/1)"}, {"name": "mattiwaananen", "title": "mattiwaananen (0/1)"}, {"name": "TOYRYLM", "title": "TOYRYLM (0/21)"}, {"name": "ttso", "title": "ttso (0/1)"}, {"name": "mjleino", "title": "mjleino (0/1)"}, {"name": "NI_mate", "title": "NI_mate (4/0)"}, {"name": "Delicode", "title": "Delicode (0/1)"}, {"name": "hugovk", "title": "hugovk (20/1)"}, {"name": "TimoStordell", "title": "TimoStordell (0/25)"}, {"name": "sibelius150", "title": "sibelius150 (7/42)"}, {"name": "RBeepo", "title": "RBeepo (3/0)"}, {"name": "EFESOR", "title": "EFESOR (0/2)"}, {"name": "rojanper", "title": "rojanper (9/6)"}, {"name": "LehtoVah", "title": "LehtoVah (0/3)"}, {"name": "annastiinatahk1", "title": "annastiinatahk1 (0/1)"}, {"name": "Eficode", "title": "Eficode (62/5)"}, {"name": "JonniKoo", "title": "JonniKoo (16/20)"}, {"name": "KiasmaMuseum", "title": "KiasmaMuseum (8/0)"}, {"name": "littlevalleymng", "title": "littlevalleymng (0/1)"}, {"name": "Live_Expert", "title": "Live_Expert (0/1)"}, {"name": "js_digest", "title": "js_digest (0/1)"}, {"name": "javascriptd", "title": "javascriptd (0/1)"}, {"name": "TuulaP", "title": "TuulaP (2/0)"}, {"name": "johannaberg", "title": "johannaberg (0/1)"}, {"name": "dustofhue", "title": "dustofhue (0/1)"}, {"name": "pekkapulli", "title": "pekkapulli (16/4)"}, {"name": "winninghelix", "title": "winninghelix (0/1)"}, {"name": "kasuava", "title": "kasuava (0/1)"}, {"name": "viiksipojat", "title": "viiksipojat (5/0)"}, {"name": "SatuPeipp0", "title": "SatuPeipp0 (0/1)"}, {"name": "sibeliusviolin", "title": "sibeliusviolin (6/4)"}, {"name": "arttusilvast", "title": "arttusilvast (22/27)"}, {"name": "mrako", "title": "mrako (8/2)"}, {"name": "MariaAnnele", "title": "MariaAnnele (1/1)"}, {"name": "JeanJCSibelius", "title": "JeanJCSibelius (0/1)"}, {"name": "Zeikko", "title": "Zeikko (41/13)"}, {"name": "TatuTamminen", "title": "TatuTamminen (6/0)"}, {"name": "taidehalli", "title": "taidehalli (0/1)"}, {"name": "yleklassinen", "title": "yleklassinen (50/53)"}, {"name": "pasianila", "title": "pasianila (0/2)"}, {"name": "ToniVertanen", "title": "ToniVertanen (0/1)"}, {"name": "hpaltemaa", "title": "hpaltemaa (0/1)"}, {"name": "Sillala", "title": "Sillala (4/1)"}, {"name": "praktfi", "title": "praktfi (4/0)"}, {"name": "AndrewGBarnett", "title": "AndrewGBarnett (0/1)"}, {"name": "anselmonadir", "title": "anselmonadir (0/2)"}, {"name": "sennipoyry", "title": "sennipoyry (0/1)"}, {"name": "h_hannahun", "title": "h_hannahun (8/0)"}, {"name": "jcvasquezgomez", "title": "jcvasquezgomez (13/1)"}, {"name": "vsaarinen", "title": "vsaarinen (9/3)"}, {"name": "AteneumMuseum", "title": "AteneumMuseum (38/67)"}, {"name": "susannahaavisto", "title": "susannahaavisto (0/3)"}, {"name": "sampsa_heinonen", "title": "sampsa_heinonen (0/1)"}, {"name": "KayleighToyra", "title": "KayleighToyra (0/1)"}, {"name": "ElsaNurmi", "title": "ElsaNurmi (1/0)"}, {"name": "JuliusTuomisto", "title": "JuliusTuomisto (1/0)"}, {"name": "phamari", "title": "phamari (0/1)"}, {"name": "DepthVector", "title": "DepthVector (0/1)"}, {"name": "MusicTechFest", "title": "MusicTechFest (3/0)"}, {"name": "gorillasaurus", "title": "gorillasaurus (0/1)"}, {"name": "KARLANDOnl", "title": "KARLANDOnl (0/1)"}, {"name": "SamiSupply", "title": "SamiSupply (0/1)"}, {"name": "soalmila", "title": "soalmila (0/2)"}, {"name": "lukeritchiemuse", "title": "lukeritchiemuse (0/1)"}, {"name": "avoinGLAM", "title": "avoinGLAM (0/1)"}, {"name": "sofiebackmn", "title": "sofiebackmn (0/1)"}, {"name": "tommikoskinen", "title": "tommikoskinen (6/0)"}, {"name": "tuomasahva", "title": "tuomasahva (1/3)"}, {"name": "IlonaKaski", "title": "IlonaKaski (0/1)"}, {"name": "linjaaho", "title": "linjaaho (0/7)"}, {"name": "mspipsa", "title": "mspipsa (1/0)"}, {"name": "angeldustr", "title": "angeldustr (7/0)"}, {"name": "aurimakela", "title": "aurimakela (6/1)"}, {"name": "mpirttiv", "title": "mpirttiv (0/1)"}];
+	
+	
+	
+	function twitterlink(n) {
+		return "<a href='https://twitter.com/" + n + "'>" + n + "</n>";
+	}
+	
+	function selectlink(n) {
+		return "<a href='javascript:userselect(\"" + n + "\")'>" + n + "</n>";
+	}
+	
+	function listsort(l) {
+		sortl = [];
+		for (var a = 0; a < l.length; a++) {
+			sortl.push(l[a].toLowerCase() + " " + l[a]);
+		}
+		sortl = sortl.sort();
+		for (var a = 0; a < sortl.length; a++) {
+			sortl[a] = sortl[a].split(" ")[1];
+		}
+		return sortl;
+	}
+	
+	function listhtml(l) {
+		l = listsort(l);
+		var html = "<ul>";
+		for (var a = 0; a < l.length; a++) {
+			html += "<li>" + selectlink(l[a]) + "</li>";
+		}
+		html += "</ul>";
+		return html;
+	}
+	
+	function selecthtml(l) {
+		l = listsort(l);
+		html = "<select onchange='userselect(this.value)'>";
+		for (var a = 0; a < l.length; a++) {
+			html += "<option>" + l[a] + "</option>";
+		}
+		html += "</select>";	
+		return html;
+	}
+	
+	function userselect(name) {
+	   	// working with:
+   	//	this:
+   	//	<circle class="" transform="translate(974.0229211897631,951.403518091633)" id="circle_RobertCBinkley" r="6">
+    //     <title>RobertCBinkley (1/1)</title>
+    //  </circle>
+    //  d:
+    //  {"name": "RobertCBinkley", "title": "RobertCBinkley (1/1)"}
+    //  path:
+    //        <path d="M952.2..." marker-end="url(#plain)" in="pabinkley" out="RobertCBinkley" 
+    //			class="link suit out_RobertCBinkley in_pabinkley hlOut"/>
+         
+   		root = d3.select("#circle_" + name);
+   		// show selected user in sidebar
+   		d3.select("#sidebar_user").html(twitterlink(name));
+
+   		
+   		pathsfg = d3.select("#paths-fg");
+   		circlesfg = d3.select("#circles-fg");
+   		textsfg = d3.select("#texts-fg");
+   		paths = d3.select("#paths");
+   		circles = d3.select("#circles");
+   		texts = d3.select("#texts");
+   		
+   		// clear previous selections
+   		d3.selectAll(".hl").classed("hl", false);
+   		d3.selectAll(".hlIn").classed("hlIn", false);
+   		d3.selectAll(".hlOut").classed("hlOut", false);
+   		// put foregrounded paths etc. (if any) back in background
+   		var p = pathsfg.selectAll("path").attr("marker-end", "url(#plain)");
+   		if (p.size() > 0)
+   			d3.select("#paths").each(function() {
+	   			f = this;
+	   			p.each(function() { 
+	   				f.appendChild(this) 
+	   			});
+    		})
+   		var p = circlesfg.selectAll("circle");
+   		if (p.size() > 0)
+   			d3.select("#circles").each(function() {
+	   			f = this;
+	   			p.each(function() { 
+	   				f.appendChild(this) 
+	   			});
+    		})
+   		var p = textsfg.selectAll("g");
+   		if (p.size() > 0)
+   			d3.select("#texts").each(function() {
+	   			f = this;
+	   			p.each(function() { 
+	   				f.appendChild(this) 
+	   			});
+    		})
+   		
+		// highlight current node, paths, branch nodes
+   		root.classed("hl", true);
+   		d3.select("#text_" + name).classed("hl", true);
+   		// highlight paths
+   		var inlist = [];
+   		var outlist = [];
+   		d3.selectAll("path.out_" + name).classed("hlOut", true).attr("marker-end", "url(#out)").each(function(d){
+   			if (d.target.name != name) {
+   				outlist.push(d.target.name);
+   				d3.select("#circle_" + d.target.name).classed("hlIn", true); 
+   				d3.select("#text_" + d.target.name).classed("hlIn", true);
+   			};
+   		});
+   		d3.selectAll("path.in_" + name).classed("hlIn", true).attr("marker-end", "url(#in)").each(function(d){
+   			if (d.source.name != name) {
+   				inlist.push(d.source.name);
+   				d3.select("#circle_" + d.source.name).classed("hlOut", true); 
+   				d3.select("#text_" + d.source.name).classed("hlOut", true)
+   				this["marker-end"] = "url(#out)";
+   			};
+   		});
+		var inlabel = {"retweets": "Retweeted by", "replies": "Replies to this", "mentions": "Mentioned"};
+		var outlabel = {"retweets": "Retweeted", "replies": "Replies from this", "mentions": "Mentioned by"};
+		d3.select("#sidebar_inlist").html("<h3>" + inlabel[mode] + "</h3>" + listhtml(inlist));
+		d3.select("#sidebar_outlist").html("<h3>" + outlabel[mode] + "</h3>" + listhtml(outlist));
+
+		// move path to a different group: based on https://groups.google.com/forum/#!topic/d3-js/KEiqiUPZHUs
+   		var p = paths.selectAll("path.out_" + name +", path.in_" + name);
+   		if (p.size() > 0)
+   			d3.select("#paths-fg").each(function() {
+	   			f = this;
+	   			p.each(function() { 
+	   				f.appendChild(this) 
+	   			});
+    		})
+   		var p = circles.selectAll(".hl, .hlIn, .hlOut");
+   		if (p.size() > 0)
+   			d3.select("#circles-fg").each(function() {
+	   			f = this;
+	   			p.each(function() { 
+	   				f.appendChild(this) 
+	   			});
+    		})
+   		var p = texts.selectAll(".hl, .hlIn, .hlOut");
+   		if (p.size() > 0)
+   			d3.select("#texts-fg").each(function() {
+	   			f = this;
+	   			p.each(function() { 
+	   				f.appendChild(this) 
+	   			});
+    		})
+
+
+	}
+	
+
+// set box size to window size
+var win = window,
+    d = document,
+    e = d.documentElement,
+    g = d.getElementsByTagName('body')[0],
+    w = win.innerWidth || e.clientWidth || g.clientWidth,
+    h = win.innerHeight|| e.clientHeight|| g.clientHeight;
+
+// set sidebar to height of window
+d3.select("#sidebar").style.height = h + 'px'; 
+
+var users = [];
+for (var a = 0; a < nodes.length; a++) {
+	users.push(nodes[a]["name"]);
+}
+
+d3.select("#sidebar_selectdiv").html(selecthtml(users));
+    
+// no, on second thought, make the window really really big
+w = 2000;
+h = 2000;
+
+var force = d3.layout.force()
+    .nodes(d3.values(nodes))
+    .links(links)
+    .size([w, h])
+    .linkDistance(60)
+    .charge(-300)
+    .on("tick", tick)
+    .start();
+
+var svg = d3.select("body").append("svg:svg")
+    .attr("width", w)
+    .attr("height", h);
+
+// Per-type markers, as they don't inherit styles.
+svg.append("svg:defs").selectAll("marker")
+    .data(["plain", "in", "out"])
+  .enter().append("svg:marker")
+    .attr("id", String)
+    .attr("viewBox", "0 -5 10 10")
+    .attr("refX", 15)
+    .attr("refY", -1.5)
+    .attr("markerWidth", 6)
+    .attr("markerHeight", 6)
+    .attr("orient", "auto")
+  .append("svg:path")
+    .attr("d", "M0,-5L10,0L0,5");
+
+var path = svg.append("svg:g")
+	.attr("id", "paths")
+  .selectAll("path")
+    .data(force.links())
+  .enter().append("svg:path")
+    .attr("class", function(d) { return "link " + d.type + " out_" + d.source.name + " in_" + d.target.name; })
+    .attr("out", function(d) { return d.source.name; })
+    .attr("in", function(d) { return d.target.name; })
+    .attr("marker-end", "url(#plain)");
+
+var circle = svg.append("svg:g")
+	.attr("id", "circles")
+	.selectAll("circle")
+    .data(force.nodes())
+  .enter().append("svg:circle")
+    .attr("r", 6)
+    .attr("id", function(d) {return "circle_" + d.name;})
+   .on("click", function(d) {
+		userselect(d.name);
+   		})
+   .call(force.drag);
+
+// tooltips
+ circle.append("title")
+      .text(function(d) { return d.title; });
+
+var text = svg.append("svg:g")
+	.attr("id", "texts")
+	.selectAll("g")
+    .data(force.nodes())
+  .enter().append("svg:g")
+  .attr("id", function(d) {return "text_" + d.name;});
+
+// A copy of the text with a thick white stroke for legibility.
+text.append("svg:text")
+    .attr("x", 8)
+    .attr("y", ".31em")
+    .attr("class", "shad")
+    
+    .text(function(d) { return d.name; });
+
+text.append("svg:text")
+    .attr("x", 8)
+    .attr("y", ".31em")
+    .text(function(d) { return d.name; });
+
+// foreground groups: we move highlighted objects here, to bring them in front of the rest
+var pathsfg = svg.append("svg:g")
+	.attr("id", "paths-fg");
+var circlesfg = svg.append("svg:g")
+	.attr("id", "circles-fg");
+var textsfg = svg.append("svg:g")
+	.attr("id", "texts-fg");
+
+// Use elliptical arc path segments to doubly-encode directionality.
+function tick() {
+  path.attr("d", function(d) {
+    var dx = d.target.x - d.source.x,
+        dy = d.target.y - d.source.y,
+        dr = Math.sqrt(dx * dx + dy * dy);
+    return "M" + d.source.x + "," + d.source.y + "A" + dr + "," + dr + " 0 0,1 " + d.target.x + "," + d.target.y;
+  });
+
+  circle.attr("transform", function(d) {
+    return "translate(" + d.x + "," + d.y + ")";
+  });
+
+  text.attr("transform", function(d) {
+    return "translate(" + d.x + "," + d.y + ")";
+  });
+}
+//	});
+
+    </script>
+    
+  </body>
+</html>
+

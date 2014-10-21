@@ -1,0 +1,1248 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script src="https://raw.github.com/jasondavies/d3-cloud/master/d3.layout.cloud.js"></script>
+</head>
+<body>
+<script>
+
+  // embed Jason Davies' d3-cloud since it's not available in a CDN
+  // Word cloud layout by Jason Davies, http://www.jasondavies.com/word-cloud/
+// Algorithm due to Jonathan Feinberg, http://static.mrfeinberg.com/bv_ch03.pdf
+(function() {
+  function cloud() {
+    var size = [256, 256],
+        text = cloudText,
+        font = cloudFont,
+        fontSize = cloudFontSize,
+        fontStyle = cloudFontNormal,
+        fontWeight = cloudFontNormal,
+        rotate = cloudRotate,
+        padding = cloudPadding,
+        spiral = archimedeanSpiral,
+        words = [],
+        timeInterval = Infinity,
+        event = d3.dispatch("word", "end"),
+        timer = null,
+        cloud = {};
+
+    cloud.start = function() {
+      var board = zeroArray((size[0] >> 5) * size[1]),
+          bounds = null,
+          n = words.length,
+          i = -1,
+          tags = [],
+          data = words.map(function(d, i) {
+            d.text = text.call(this, d, i);
+            d.font = font.call(this, d, i);
+            d.style = fontStyle.call(this, d, i);
+            d.weight = fontWeight.call(this, d, i);
+            d.rotate = rotate.call(this, d, i);
+            d.size = ~~fontSize.call(this, d, i);
+            d.padding = padding.call(this, d, i);
+            return d;
+          }).sort(function(a, b) { return b.size - a.size; });
+
+      if (timer) clearInterval(timer);
+      timer = setInterval(step, 0);
+      step();
+
+      return cloud;
+
+      function step() {
+        var start = +new Date,
+            d;
+        while (+new Date - start < timeInterval && ++i < n && timer) {
+          d = data[i];
+          d.x = (size[0] * (Math.random() + .5)) >> 1;
+          d.y = (size[1] * (Math.random() + .5)) >> 1;
+          cloudSprite(d, data, i);
+          if (d.hasText && place(board, d, bounds)) {
+            tags.push(d);
+            event.word(d);
+            if (bounds) cloudBounds(bounds, d);
+            else bounds = [{x: d.x + d.x0, y: d.y + d.y0}, {x: d.x + d.x1, y: d.y + d.y1}];
+            // Temporary hack
+            d.x -= size[0] >> 1;
+            d.y -= size[1] >> 1;
+          }
+        }
+        if (i >= n) {
+          cloud.stop();
+          event.end(tags, bounds);
+        }
+      }
+    }
+
+    cloud.stop = function() {
+      if (timer) {
+        clearInterval(timer);
+        timer = null;
+      }
+      return cloud;
+    };
+
+    cloud.timeInterval = function(x) {
+      if (!arguments.length) return timeInterval;
+      timeInterval = x == null ? Infinity : x;
+      return cloud;
+    };
+
+    function place(board, tag, bounds) {
+      var perimeter = [{x: 0, y: 0}, {x: size[0], y: size[1]}],
+          startX = tag.x,
+          startY = tag.y,
+          maxDelta = Math.sqrt(size[0] * size[0] + size[1] * size[1]),
+          s = spiral(size),
+          dt = Math.random() < .5 ? 1 : -1,
+          t = -dt,
+          dxdy,
+          dx,
+          dy;
+
+      while (dxdy = s(t += dt)) {
+        dx = ~~dxdy[0];
+        dy = ~~dxdy[1];
+
+        if (Math.min(dx, dy) > maxDelta) break;
+
+        tag.x = startX + dx;
+        tag.y = startY + dy;
+
+        if (tag.x + tag.x0 < 0 || tag.y + tag.y0 < 0 ||
+            tag.x + tag.x1 > size[0] || tag.y + tag.y1 > size[1]) continue;
+        // TODO only check for collisions within current bounds.
+        if (!bounds || !cloudCollide(tag, board, size[0])) {
+          if (!bounds || collideRects(tag, bounds)) {
+            var sprite = tag.sprite,
+                w = tag.width >> 5,
+                sw = size[0] >> 5,
+                lx = tag.x - (w << 4),
+                sx = lx & 0x7f,
+                msx = 32 - sx,
+                h = tag.y1 - tag.y0,
+                x = (tag.y + tag.y0) * sw + (lx >> 5),
+                last;
+            for (var j = 0; j < h; j++) {
+              last = 0;
+              for (var i = 0; i <= w; i++) {
+                board[x + i] |= (last << msx) | (i < w ? (last = sprite[j * w + i]) >>> sx : 0);
+              }
+              x += sw;
+            }
+            delete tag.sprite;
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+
+    cloud.words = function(x) {
+      if (!arguments.length) return words;
+      words = x;
+      return cloud;
+    };
+
+    cloud.size = function(x) {
+      if (!arguments.length) return size;
+      size = [+x[0], +x[1]];
+      return cloud;
+    };
+
+    cloud.font = function(x) {
+      if (!arguments.length) return font;
+      font = d3.functor(x);
+      return cloud;
+    };
+
+    cloud.fontStyle = function(x) {
+      if (!arguments.length) return fontStyle;
+      fontStyle = d3.functor(x);
+      return cloud;
+    };
+
+    cloud.fontWeight = function(x) {
+      if (!arguments.length) return fontWeight;
+      fontWeight = d3.functor(x);
+      return cloud;
+    };
+
+    cloud.rotate = function(x) {
+      if (!arguments.length) return rotate;
+      rotate = d3.functor(x);
+      return cloud;
+    };
+
+    cloud.text = function(x) {
+      if (!arguments.length) return text;
+      text = d3.functor(x);
+      return cloud;
+    };
+
+    cloud.spiral = function(x) {
+      if (!arguments.length) return spiral;
+      spiral = spirals[x + ""] || x;
+      return cloud;
+    };
+
+    cloud.fontSize = function(x) {
+      if (!arguments.length) return fontSize;
+      fontSize = d3.functor(x);
+      return cloud;
+    };
+
+    cloud.padding = function(x) {
+      if (!arguments.length) return padding;
+      padding = d3.functor(x);
+      return cloud;
+    };
+
+    return d3.rebind(cloud, event, "on");
+  }
+
+  function cloudText(d) {
+    return d.text;
+  }
+
+  function cloudFont() {
+    return "serif";
+  }
+
+  function cloudFontNormal() {
+    return "normal";
+  }
+
+  function cloudFontSize(d) {
+    return Math.sqrt(d.value);
+  }
+
+  function cloudRotate() {
+    return (~~(Math.random() * 6) - 3) * 30;
+  }
+
+  function cloudPadding() {
+    return 1;
+  }
+
+  // Fetches a monochrome sprite bitmap for the specified text.
+  // Load in batches for speed.
+  function cloudSprite(d, data, di) {
+    if (d.sprite) return;
+    c.clearRect(0, 0, (cw << 5) / ratio, ch / ratio);
+    var x = 0,
+        y = 0,
+        maxh = 0,
+        n = data.length;
+    --di;
+    while (++di < n) {
+      d = data[di];
+      c.save();
+      c.font = d.style + " " + d.weight + " " + ~~((d.size + 1) / ratio) + "px " + d.font;
+      var w = c.measureText(d.text + "m").width * ratio,
+          h = d.size << 1;
+      if (d.rotate) {
+        var sr = Math.sin(d.rotate * cloudRadians),
+            cr = Math.cos(d.rotate * cloudRadians),
+            wcr = w * cr,
+            wsr = w * sr,
+            hcr = h * cr,
+            hsr = h * sr;
+        w = (Math.max(Math.abs(wcr + hsr), Math.abs(wcr - hsr)) + 0x1f) >> 5 << 5;
+        h = ~~Math.max(Math.abs(wsr + hcr), Math.abs(wsr - hcr));
+      } else {
+        w = (w + 0x1f) >> 5 << 5;
+      }
+      if (h > maxh) maxh = h;
+      if (x + w >= (cw << 5)) {
+        x = 0;
+        y += maxh;
+        maxh = 0;
+      }
+      if (y + h >= ch) break;
+      c.translate((x + (w >> 1)) / ratio, (y + (h >> 1)) / ratio);
+      if (d.rotate) c.rotate(d.rotate * cloudRadians);
+      c.fillText(d.text, 0, 0);
+      if (d.padding) c.lineWidth = 2 * d.padding, c.strokeText(d.text, 0, 0);
+      c.restore();
+      d.width = w;
+      d.height = h;
+      d.xoff = x;
+      d.yoff = y;
+      d.x1 = w >> 1;
+      d.y1 = h >> 1;
+      d.x0 = -d.x1;
+      d.y0 = -d.y1;
+      d.hasText = true;
+      x += w;
+    }
+    var pixels = c.getImageData(0, 0, (cw << 5) / ratio, ch / ratio).data,
+        sprite = [];
+    while (--di >= 0) {
+      d = data[di];
+      if (!d.hasText) continue;
+      var w = d.width,
+          w32 = w >> 5,
+          h = d.y1 - d.y0;
+      // Zero the buffer
+      for (var i = 0; i < h * w32; i++) sprite[i] = 0;
+      x = d.xoff;
+      if (x == null) return;
+      y = d.yoff;
+      var seen = 0,
+          seenRow = -1;
+      for (var j = 0; j < h; j++) {
+        for (var i = 0; i < w; i++) {
+          var k = w32 * j + (i >> 5),
+              m = pixels[((y + j) * (cw << 5) + (x + i)) << 2] ? 1 << (31 - (i % 32)) : 0;
+          sprite[k] |= m;
+          seen |= m;
+        }
+        if (seen) seenRow = j;
+        else {
+          d.y0++;
+          h--;
+          j--;
+          y++;
+        }
+      }
+      d.y1 = d.y0 + seenRow;
+      d.sprite = sprite.slice(0, (d.y1 - d.y0) * w32);
+    }
+  }
+
+  // Use mask-based collision detection.
+  function cloudCollide(tag, board, sw) {
+    sw >>= 5;
+    var sprite = tag.sprite,
+        w = tag.width >> 5,
+        lx = tag.x - (w << 4),
+        sx = lx & 0x7f,
+        msx = 32 - sx,
+        h = tag.y1 - tag.y0,
+        x = (tag.y + tag.y0) * sw + (lx >> 5),
+        last;
+    for (var j = 0; j < h; j++) {
+      last = 0;
+      for (var i = 0; i <= w; i++) {
+        if (((last << msx) | (i < w ? (last = sprite[j * w + i]) >>> sx : 0))
+            & board[x + i]) return true;
+      }
+      x += sw;
+    }
+    return false;
+  }
+
+  function cloudBounds(bounds, d) {
+    var b0 = bounds[0],
+        b1 = bounds[1];
+    if (d.x + d.x0 < b0.x) b0.x = d.x + d.x0;
+    if (d.y + d.y0 < b0.y) b0.y = d.y + d.y0;
+    if (d.x + d.x1 > b1.x) b1.x = d.x + d.x1;
+    if (d.y + d.y1 > b1.y) b1.y = d.y + d.y1;
+  }
+
+  function collideRects(a, b) {
+    return a.x + a.x1 > b[0].x && a.x + a.x0 < b[1].x && a.y + a.y1 > b[0].y && a.y + a.y0 < b[1].y;
+  }
+
+  function archimedeanSpiral(size) {
+    var e = size[0] / size[1];
+    return function(t) {
+      return [e * (t *= .1) * Math.cos(t), t * Math.sin(t)];
+    };
+  }
+
+  function rectangularSpiral(size) {
+    var dy = 4,
+        dx = dy * size[0] / size[1],
+        x = 0,
+        y = 0;
+    return function(t) {
+      var sign = t < 0 ? -1 : 1;
+      // See triangular numbers: T_n = n * (n + 1) / 2.
+      switch ((Math.sqrt(1 + 4 * sign * t) - sign) & 3) {
+        case 0:  x += dx; break;
+        case 1:  y += dy; break;
+        case 2:  x -= dx; break;
+        default: y -= dy; break;
+      }
+      return [x, y];
+    };
+  }
+
+  // TODO reuse arrays?
+  function zeroArray(n) {
+    var a = [],
+        i = -1;
+    while (++i < n) a[i] = 0;
+    return a;
+  }
+
+  var cloudRadians = Math.PI / 180,
+      cw = 1 << 11 >> 5,
+      ch = 1 << 11,
+      canvas,
+      ratio = 1;
+
+  if (typeof document !== "undefined") {
+    canvas = document.createElement("canvas");
+    canvas.width = 1;
+    canvas.height = 1;
+    ratio = Math.sqrt(canvas.getContext("2d").getImageData(0, 0, 1, 1).data.length >> 2);
+    canvas.width = (cw << 5) / ratio;
+    canvas.height = ch / ratio;
+  } else {
+    // Attempt to use node-canvas.
+    canvas = new Canvas(cw << 5, ch);
+  }
+
+  var c = canvas.getContext("2d"),
+      spirals = {
+        archimedean: archimedeanSpiral,
+        rectangular: rectangularSpiral
+      };
+  c.fillStyle = c.strokeStyle = "red";
+  c.textAlign = "center";
+
+  if (typeof module === "object" && module.exports) module.exports = cloud;
+  else (d3.layout || (d3.layout = {})).cloud = cloud;
+})();
+
+
+  var fill = d3.scale.category20();
+  var words = [
+  {
+    "text": "sibelius", 
+    "size": 121
+  }, 
+  {
+    "text": "hacking", 
+    "size": 69
+  }, 
+  {
+    "text": "ateneum", 
+    "size": 44
+  }, 
+  {
+    "text": "alkaa", 
+    "size": 43
+  }, 
+  {
+    "text": "my\u00f6s", 
+    "size": 39
+  }, 
+  {
+    "text": "klo", 
+    "size": 39
+  }, 
+  {
+    "text": "now", 
+    "size": 38
+  }, 
+  {
+    "text": "teams", 
+    "size": 38
+  }, 
+  {
+    "text": "weekend", 
+    "size": 38
+  }, 
+  {
+    "text": "nyt", 
+    "size": 35
+  }, 
+  {
+    "text": "ateneum-salissa", 
+    "size": 35
+  }, 
+  {
+    "text": "night", 
+    "size": 35
+  }, 
+  {
+    "text": "see", 
+    "size": 34
+  }, 
+  {
+    "text": "good", 
+    "size": 33
+  }, 
+  {
+    "text": "ihan", 
+    "size": 33
+  }, 
+  {
+    "text": "very", 
+    "size": 32
+  }, 
+  {
+    "text": "inspired", 
+    "size": 32
+  }, 
+  {
+    "text": "new", 
+    "size": 31
+  }, 
+  {
+    "text": "soittaa", 
+    "size": 31
+  }, 
+  {
+    "text": "sibeliuksen", 
+    "size": 31
+  }, 
+  {
+    "text": "suosikki", 
+    "size": 29
+  }, 
+  {
+    "text": "still", 
+    "size": 29
+  }, 
+  {
+    "text": "tiimin", 
+    "size": 29
+  }, 
+  {
+    "text": "day", 
+    "size": 29
+  }, 
+  {
+    "text": "viikonloppuna", 
+    "size": 29
+  }, 
+  {
+    "text": "installation", 
+    "size": 28
+  }, 
+  {
+    "text": "winners", 
+    "size": 28
+  }, 
+  {
+    "text": "thank", 
+    "size": 28
+  }, 
+  {
+    "text": "going", 
+    "size": 28
+  }, 
+  {
+    "text": "superb", 
+    "size": 28
+  }, 
+  {
+    "text": "demos", 
+    "size": 28
+  }, 
+  {
+    "text": "monument", 
+    "size": 28
+  }, 
+  {
+    "text": "magic", 
+    "size": 27
+  }, 
+  {
+    "text": "collage", 
+    "size": 27
+  }, 
+  {
+    "text": "hahmottua!", 
+    "size": 27
+  }, 
+  {
+    "text": "de-fragmenting", 
+    "size": 27
+  }, 
+  {
+    "text": "you'll", 
+    "size": 27
+  }, 
+  {
+    "text": "colors", 
+    "size": 27
+  }, 
+  {
+    "text": "t\u00e4n\u00e4\u00e4n", 
+    "size": 27
+  }, 
+  {
+    "text": "sonic", 
+    "size": 27
+  }, 
+  {
+    "text": "hieno", 
+    "size": 27
+  }, 
+  {
+    "text": "jury", 
+    "size": 26
+  }, 
+  {
+    "text": "golden", 
+    "size": 26
+  }, 
+  {
+    "text": "hereill\u00e4", 
+    "size": 26
+  }, 
+  {
+    "text": "finalistien", 
+    "size": 26
+  }, 
+  {
+    "text": "berliiniin", 
+    "size": 26
+  }, 
+  {
+    "text": "far", 
+    "size": 26
+  }, 
+  {
+    "text": "voittajateosta", 
+    "size": 26
+  }, 
+  {
+    "text": "out", 
+    "size": 26
+  }, 
+  {
+    "text": "l\u00e4htee", 
+    "size": 26
+  }, 
+  {
+    "text": "joukkue", 
+    "size": 26
+  }, 
+  {
+    "text": "ticket\u201d:", 
+    "size": 26
+  }, 
+  {
+    "text": "instrument", 
+    "size": 26
+  }, 
+  {
+    "text": "jatkuu", 
+    "size": 26
+  }, 
+  {
+    "text": "esittelem\u00e4\u00e4n", 
+    "size": 26
+  }, 
+  {
+    "text": "demot", 
+    "size": 26
+  }, 
+  {
+    "text": "tule!", 
+    "size": 26
+  }, 
+  {
+    "text": "py\u00f6rii,", 
+    "size": 26
+  }, 
+  {
+    "text": "tuomaristo", 
+    "size": 26
+  }, 
+  {
+    "text": "teoksia", 
+    "size": 26
+  }, 
+  {
+    "text": "inspiroitui", 
+    "size": 26
+  }, 
+  {
+    "text": "symposion", 
+    "size": 26
+  }, 
+  {
+    "text": "let's", 
+    "size": 26
+  }, 
+  {
+    "text": "finaali", 
+    "size": 26
+  }, 
+  {
+    "text": "intensive", 
+    "size": 24
+  }, 
+  {
+    "text": "messiin!", 
+    "size": 24
+  }, 
+  {
+    "text": "t\u00e4ynn\u00e4!", 
+    "size": 24
+  }, 
+  {
+    "text": "great", 
+    "size": 24
+  }, 
+  {
+    "text": "ett\u00e4", 
+    "size": 24
+  }, 
+  {
+    "text": "ohi,", 
+    "size": 24
+  }, 
+  {
+    "text": "k\u00e4ytt\u00e4en", 
+    "size": 24
+  }, 
+  {
+    "text": "issa", 
+    "size": 24
+  }, 
+  {
+    "text": "talo", 
+    "size": 24
+  }, 
+  {
+    "text": "hall", 
+    "size": 24
+  }, 
+  {
+    "text": "uusia", 
+    "size": 24
+  }, 
+  {
+    "text": "hack!\"", 
+    "size": 24
+  }, 
+  {
+    "text": "hyv\u00e4ksi", 
+    "size": 24
+  }, 
+  {
+    "text": "idea!", 
+    "size": 24
+  }, 
+  {
+    "text": "hope", 
+    "size": 24
+  }, 
+  {
+    "text": "ateneummuseum", 
+    "size": 24
+  }, 
+  {
+    "text": "muotoja", 
+    "size": 24
+  }, 
+  {
+    "text": "brilliant!", 
+    "size": 24
+  }, 
+  {
+    "text": "tuu", 
+    "size": 24
+  }, 
+  {
+    "text": "lopputulos", 
+    "size": 24
+  }, 
+  {
+    "text": "t\u00e4ll\u00e4nen", 
+    "size": 24
+  }, 
+  {
+    "text": "voi", 
+    "size": 24
+  }, 
+  {
+    "text": "ohjaa", 
+    "size": 24
+  }, 
+  {
+    "text": "work!", 
+    "size": 24
+  }, 
+  {
+    "text": "varasl\u00e4ht\u00f6", 
+    "size": 24
+  }, 
+  {
+    "text": "big", 
+    "size": 24
+  }, 
+  {
+    "text": "kaikuu", 
+    "size": 24
+  }, 
+  {
+    "text": "menny", 
+    "size": 24
+  }, 
+  {
+    "text": "liki", 
+    "size": 24
+  }, 
+  {
+    "text": "huomenna", 
+    "size": 24
+  }, 
+  {
+    "text": "you!", 
+    "size": 24
+  }, 
+  {
+    "text": "rakennuksen", 
+    "size": 24
+  }, 
+  {
+    "text": "y\u00f6ty\u00f6", 
+    "size": 24
+  }, 
+  {
+    "text": "check", 
+    "size": 24
+  }, 
+  {
+    "text": "up:", 
+    "size": 23
+  }, 
+  {
+    "text": "luovaa", 
+    "size": 23
+  }, 
+  {
+    "text": "varten!", 
+    "size": 23
+  }, 
+  {
+    "text": "susanna", 
+    "size": 23
+  }, 
+  {
+    "text": "johtaja", 
+    "size": 23
+  }, 
+  {
+    "text": "busoni", 
+    "size": 23
+  }, 
+  {
+    "text": "work", 
+    "size": 23
+  }, 
+  {
+    "text": "miksei", 
+    "size": 23
+  }, 
+  {
+    "text": "sunday", 
+    "size": 23
+  }, 
+  {
+    "text": "yleis\u00f6n", 
+    "size": 23
+  }, 
+  {
+    "text": "media", 
+    "size": 23
+  }, 
+  {
+    "text": "pettersson:", 
+    "size": 23
+  }, 
+  {
+    "text": "yhteisty\u00f6t\u00e4", 
+    "size": 23
+  }, 
+  {
+    "text": "final", 
+    "size": 23
+  }, 
+  {
+    "text": "sound,", 
+    "size": 23
+  }, 
+  {
+    "text": "merkeiss\u00e4", 
+    "size": 23
+  }, 
+  {
+    "text": "recording", 
+    "size": 23
+  }, 
+  {
+    "text": "interactive", 
+    "size": 23
+  }, 
+  {
+    "text": "better", 
+    "size": 23
+  }, 
+  {
+    "text": "ylpeit\u00e4", 
+    "size": 23
+  }, 
+  {
+    "text": "winner", 
+    "size": 23
+  }, 
+  {
+    "text": "progress", 
+    "size": 23
+  }, 
+  {
+    "text": "job,", 
+    "size": 23
+  }, 
+  {
+    "text": "olisivat", 
+    "size": 23
+  }, 
+  {
+    "text": "come", 
+    "size": 23
+  }, 
+  {
+    "text": "tapahtuu:", 
+    "size": 23
+  }, 
+  {
+    "text": "fun!", 
+    "size": 23
+  }, 
+  {
+    "text": "tarkoitettu", 
+    "size": 23
+  }, 
+  {
+    "text": "h\u00e4nen", 
+    "size": 23
+  }, 
+  {
+    "text": "ready", 
+    "size": 23
+  }, 
+  {
+    "text": "things", 
+    "size": 23
+  }, 
+  {
+    "text": "tweak", 
+    "size": 23
+  }, 
+  {
+    "text": "viulupeli", 
+    "size": 23
+  }, 
+  {
+    "text": "play", 
+    "size": 23
+  }, 
+  {
+    "text": "t\u00e4llaista", 
+    "size": 23
+  }, 
+  {
+    "text": "exciting", 
+    "size": 23
+  }, 
+  {
+    "text": "juuri", 
+    "size": 23
+  }, 
+  {
+    "text": "ui,", 
+    "size": 23
+  }, 
+  {
+    "text": "code", 
+    "size": 22
+  }, 
+  {
+    "text": "full", 
+    "size": 22
+  }, 
+  {
+    "text": "judges", 
+    "size": 22
+  }, 
+  {
+    "text": "github:", 
+    "size": 22
+  }, 
+  {
+    "text": "experience", 
+    "size": 22
+  }, 
+  {
+    "text": "super", 
+    "size": 22
+  }, 
+  {
+    "text": "until", 
+    "size": 22
+  }, 
+  {
+    "text": "something", 
+    "size": 22
+  }, 
+  {
+    "text": "stop", 
+    "size": 22
+  }, 
+  {
+    "text": "soon", 
+    "size": 22
+  }, 
+  {
+    "text": "tule", 
+    "size": 22
+  }, 
+  {
+    "text": "amazing", 
+    "size": 22
+  }, 
+  {
+    "text": "kiitt\u00e4\u00e4", 
+    "size": 22
+  }, 
+  {
+    "text": "day!", 
+    "size": 22
+  }, 
+  {
+    "text": "art", 
+    "size": 22
+  }, 
+  {
+    "text": "open", 
+    "size": 22
+  }, 
+  {
+    "text": "doesn't", 
+    "size": 22
+  }, 
+  {
+    "text": "inspiring", 
+    "size": 22
+  }, 
+  {
+    "text": "hrs", 
+    "size": 22
+  }, 
+  {
+    "text": "sipsit", 
+    "size": 22
+  }, 
+  {
+    "text": "maailma", 
+    "size": 22
+  }, 
+  {
+    "text": "taide", 
+    "size": 22
+  }, 
+  {
+    "text": "morning", 
+    "size": 22
+  }, 
+  {
+    "text": "steam", 
+    "size": 22
+  }, 
+  {
+    "text": "closed", 
+    "size": 22
+  }, 
+  {
+    "text": "available", 
+    "size": 22
+  }, 
+  {
+    "text": "tough", 
+    "size": 22
+  }, 
+  {
+    "text": "backend", 
+    "size": 22
+  }, 
+  {
+    "text": "last", 
+    "size": 22
+  }, 
+  {
+    "text": "couple", 
+    "size": 22
+  }, 
+  {
+    "text": "milt\u00e4", 
+    "size": 22
+  }, 
+  {
+    "text": "entry", 
+    "size": 22
+  }, 
+  {
+    "text": "fantastic", 
+    "size": 22
+  }, 
+  {
+    "text": "kannattaa", 
+    "size": 22
+  }, 
+  {
+    "text": "tekstuuria", 
+    "size": 22
+  }, 
+  {
+    "text": "finale", 
+    "size": 22
+  }, 
+  {
+    "text": "starting", 
+    "size": 22
+  }, 
+  {
+    "text": "tuomarointi", 
+    "size": 21
+  }, 
+  {
+    "text": "visual", 
+    "size": 21
+  }, 
+  {
+    "text": "filters", 
+    "size": 21
+  }, 
+  {
+    "text": "movement", 
+    "size": 21
+  }, 
+  {
+    "text": "hours", 
+    "size": 21
+  }, 
+  {
+    "text": "pm,", 
+    "size": 21
+  }, 
+  {
+    "text": "heitt\u00e4\u00e4", 
+    "size": 21
+  }, 
+  {
+    "text": "tuli", 
+    "size": 21
+  }, 
+  {
+    "text": "symphony", 
+    "size": 21
+  }, 
+  {
+    "text": "more", 
+    "size": 21
+  }, 
+  {
+    "text": "kyll\u00e4", 
+    "size": 21
+  }, 
+  {
+    "text": "tuotoksia", 
+    "size": 21
+  }, 
+  {
+    "text": "mahtava", 
+    "size": 21
+  }, 
+  {
+    "text": "arrive", 
+    "size": 21
+  }, 
+  {
+    "text": "kohtasivat", 
+    "size": 21
+  }, 
+  {
+    "text": "court", 
+    "size": 21
+  }, 
+  {
+    "text": "interacts", 
+    "size": 21
+  }, 
+  {
+    "text": "interview", 
+    "size": 21
+  }, 
+  {
+    "text": "t\u00e4\u00e4ll\u00e4", 
+    "size": 21
+  }, 
+  {
+    "text": "kovan", 
+    "size": 21
+  }, 
+  {
+    "text": "different!", 
+    "size": 21
+  }, 
+  {
+    "text": "coodaa", 
+    "size": 21
+  }, 
+  {
+    "text": "music,", 
+    "size": 21
+  }, 
+  {
+    "text": "mahtavia", 
+    "size": 21
+  }, 
+  {
+    "text": "taloon", 
+    "size": 21
+  }, 
+  {
+    "text": "p\u00e4iv\u00e4!", 
+    "size": 21
+  }, 
+  {
+    "text": "filter,", 
+    "size": 21
+  }
+]
+
+  d3.layout.cloud().size([800, 800])
+      .words(words)
+      .rotate(function() { return ~~(Math.random() * 2) * 90; })
+      .font("Impact")
+      .fontSize(function(d) { return d.size; })
+      .on("end", draw)
+      .start();
+
+  function draw(words) {
+    d3.select("body").append("svg")
+        .attr("width", 1000)
+        .attr("height", 1000)
+      .append("g")
+        .attr("transform", "translate(400,400)")
+      .selectAll("text")
+        .data(words)
+      .enter().append("text")
+        .style("font-size", function(d) { return d.size + "px"; })
+        .style("font-family", "Impact")
+        .style("fill", function(d, i) { return fill(i); })
+        .attr("text-anchor", "middle")
+        .attr("transform", function(d) {
+          return "translate(" + [d.x, d.y] + ")rotate(" + d.rotate + ")";
+        })
+        .text(function(d) { return d.text; });
+  }
+</script>
+</body>
+</html>
+
