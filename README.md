@@ -5,6 +5,8 @@ Tweets from SibHack, archived and processed using [twarc](https://github.com/eds
 
  * See a [wall](https://hugovk.github.io/sibhack/wall.html) of the 652 tweets.
 
+ * Some tweeted [photos](https://hugovk.github.io/sibhack/sibhack.jpg).
+
  * The [top 10 retweets](https://hugovk.github.io/sibhack/retweets.html).
 
  * 212 tweets were sent by men, 199 by women, 241 unknown.
@@ -15,11 +17,11 @@ Tweets from SibHack, archived and processed using [twarc](https://github.com/eds
 
  * Directed graphs of [retweets](https://hugovk.github.io/sibhack/directed-retweets.html), [mentions](https://hugovk.github.io/sibhack/directed-mentions.html) and [replies](https://hugovk.github.io/sibhack/directed-replies.html)
 
+ * A list of [hashtags](https://hugovk.github.io/sibhack/hashtags.txt).
+
  * A list of [embedded media](https://github.com/hugovk/sibhack/blob/gh-pages/embeds.txt).
 
-
-
-  * Finally, here's the raw (filtered) data: [sibhack.json](https://github.com/hugovk/sibhack/blob/gh-pages/sibhack.json).
+ * Finally, here's the raw (filtered) data: [sibhack.json](https://github.com/hugovk/sibhack/blob/gh-pages/sibhack.json).
 
 
 
@@ -79,3 +81,7 @@ Retweets:
 Make a wordcloud:
 
     utils\wordcloud.py sibhack.json > wordcloud.html
+
+List of hashtags:
+
+    utils\tags.py sibhack.json > hashtags.txt
