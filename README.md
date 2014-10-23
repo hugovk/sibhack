@@ -5,7 +5,7 @@ Tweets from SibHack, archived and processed using [twarc](https://github.com/eds
 
  * See a [wall](https://hugovk.github.io/sibhack/wall.html) of the 652 tweets.
 
- * Some tweeted [photos](https://hugovk.github.io/sibhack/sibhack.jpg).
+ * Some tweeted [photos](https://hugovk.github.io/sibhack/sibhack.jpg) and on [Flickr](https://www.flickr.com/photos/hugovk/sets/72157648503506968/).
 
  * The [top 10 retweets](https://hugovk.github.io/sibhack/retweets.html).
 
